@@ -16,7 +16,12 @@ class ContactCell: UITableViewCell {
         return label
     }()
     
-    
+    var contactNumberLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -33,9 +38,16 @@ class ContactCell: UITableViewCell {
         super.init(style: .subtitle, reuseIdentifier: reuseIdentifier)
         
         addSubview(contactNameLabel)
+        addSubview(contactNumberLabel)
+        
+        
         contactNameLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12).isActive = true
-        contactNameLabel.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
-        contactNameLabel.heightAnchor.constraint(equalToConstant: 20).isActive = true
+        contactNameLabel.topAnchor.constraint(equalTo: topAnchor, constant: 10).isActive = true
+        contactNameLabel.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        
+        contactNumberLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12).isActive = true
+        contactNumberLabel.topAnchor.constraint(equalTo: contactNameLabel.bottomAnchor, constant: 10).isActive = true
+        contactNumberLabel.heightAnchor.constraint(equalToConstant: 20).isActive = true
     }
     
     required init?(coder aDecoder: NSCoder) {

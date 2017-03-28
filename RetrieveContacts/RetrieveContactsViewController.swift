@@ -32,6 +32,7 @@ class RetrieveContactsViewController: UIViewController {
     
     lazy var contactsTableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .grouped)
+        //
         tableView.translatesAutoresizingMaskIntoConstraints = false
         return tableView
     }()
@@ -55,11 +56,15 @@ class RetrieveContactsViewController: UIViewController {
         
         // Do any additional setup after loading the view.
         
+        // Set the contactsTableView to use the UITableViewDelegate and UITableViewDataSource functions
         contactsTableView.delegate = self
         contactsTableView.dataSource = self
+        
+        // Register the cells
         contactsTableView.register(UITableViewCell.self, forCellReuseIdentifier: contactsToAddReuseIdentifier)
         contactsTableView.register(ContactCell.self, forCellReuseIdentifier: contactsToInviteReuseIdentifer)
-        //getContacts()
+        
+        // Retrieve the contacts and reload the data in the tableview to reflect this
         findContactsOnBackgroundThread { (contacts) in
             self.objects = contacts!
             self.contactsTableView.reloadData()
@@ -72,11 +77,16 @@ class RetrieveContactsViewController: UIViewController {
     
     func findContactsOnBackgroundThread (_ completionHandler: @escaping (_ contacts:[CNContact]?)->()) {
         
-        DispatchQueue.global(qos: .userInitiated).async(execute: { () -> Void in
+        DispatchQueue.global(qos: .background).async(execute: { () -> Void in
             
-            let keysToFetch = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName), CNContactPhoneNumbersKey] as [Any] //CNContactIdentifierKey
+            let keysToFetch = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName), CNContactPhoneNumbersKey] as [Any]
+            
             let fetchRequest = CNContactFetchRequest( keysToFetch: keysToFetch as! [CNKeyDescriptor])
+            
+            // This is the array of objects that will be passed into the completion block.
+            // And then retrieved as the objects array
             var contacts = [CNContact]()
+            
             CNContact.localizedString(forKey: CNLabelPhoneNumberiPhone)
             
             if #available(iOS 10.0, *) {
@@ -84,25 +94,34 @@ class RetrieveContactsViewController: UIViewController {
             } else {
                 // Fallback on earlier versions
             }
+            
+
             fetchRequest.unifyResults = true
             fetchRequest.sortOrder = .userDefault
             
-            let contactStoreID = CNContactStore().defaultContainerIdentifier()
             
+            // Retrieving contacts, may throw Error. Complete in a do/try/catch block
             do {
                 
+                // For each CNContact in your phone...
                 try CNContactStore().enumerateContacts(with: fetchRequest) { (contact, stop) -> Void in
                     //do something with contact
+                    
+                    // If this contact has a phone number, append to the array
                     if contact.phoneNumbers.count > 0 {
                         contacts.append(contact)
                     }
                     
                 }
+                
+                // Catch the error, if it exists
             } catch let e as NSError {
                 print(e.localizedDescription)
             }
             
             DispatchQueue.main.async(execute: { () -> Void in
+                
+                // Provide the contacts array as the completion
                 completionHandler(contacts)
                 
             })
@@ -114,6 +133,8 @@ class RetrieveContactsViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
     
+    var testTitlesArray = ["Perhaps", "This Is", "Someone That Has", "Already signed up for your app", "And you want", "to add", "this person to your friend's list"]
+    
 }
 
 extension RetrieveContactsViewController: UITableViewDelegate, UITableViewDataSource {
@@ -121,9 +142,13 @@ extension RetrieveContactsViewController: UITableViewDelegate, UITableViewDataSo
     func numberOfSections(in tableView: UITableView) -> Int { return 2 }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        
         if section == 0 {
-            return 7
-        } else { return objects.count }
+            return testTitlesArray.count
+        } else {
+            return objects.count
+        }
+        
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
@@ -135,7 +160,7 @@ extension RetrieveContactsViewController: UITableViewDelegate, UITableViewDataSo
         let inviteContactsCell: ContactCell!
         if indexPath.section == 0 {
             addContactsCell = tableView.dequeueReusableCell(withIdentifier: contactsToAddReuseIdentifier, for: indexPath)
-            addContactsCell.textLabel?.text = "test"
+            addContactsCell.textLabel?.text = testTitlesArray[indexPath.row]
             return addContactsCell
         } else {
             inviteContactsCell = tableView.dequeueReusableCell(withIdentifier: contactsToInviteReuseIdentifer, for: indexPath) as! ContactCell
@@ -151,17 +176,11 @@ extension RetrieveContactsViewController: UITableViewDelegate, UITableViewDataSo
         
         let formatter = CNContactFormatter()
         
-        var contactPhoneNumber = (contact.phoneNumbers[0].value).value(forKey: "digits") as? String
+        let contactPhoneNumber = (contact.phoneNumbers[0].value).value(forKey: "digits") as? String
         
-        // Sometimes people in your phone book may have a +1 (The country code. in this case, this is the United States code) in their phone number which may or may not hinder your app's use, to get around that, here is a simple way to remove that +1
-        
-        if (contactPhoneNumber?.contains("+1"))! {
-            
-            print("\(formatter.string(from: contact))'s phoneNumber contains a +1: \(contactPhoneNumber)")
-            let index = contactPhoneNumber?.index((contactPhoneNumber?.startIndex)!, offsetBy: 2)
-            contactPhoneNumber = contactPhoneNumber?.substring(from: index!)
-            
-        }
+       
         cell.contactNameLabel.text = formatter.string(from: contact)
+        
+        cell.contactNumberLabel.text = contactPhoneNumber
     }
 }
